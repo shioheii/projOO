@@ -17,6 +17,12 @@ interface Notification {
     send(): void;
 }
 
+class SMSLegado {
+    sendText(phone: string, msg: string): void { 
+        console.log(`Enviando SMS LEGADO...`);
+    }
+}
+
 abstract class BaseNotification implements Notification {
 
     send(): void {
@@ -35,6 +41,27 @@ abstract class BaseNotification implements Notification {
     }
 
     protected abstract sendNotification(): void;
+}
+
+class SMSLegadoAdapter implements Notification {
+    constructor(private service: SMSLegado) {}
+
+    send(recipient: string, message: string): void {
+        this.service.sendText(recipient, message);
+    }
+}
+
+class NotificationProxy implements Notification {
+    constructor(
+        private real: Notification,
+        private allowedChannels: string[]
+    ) {}
+
+    send(recipient: string, message: string): void {
+        console.log("Validando permissoes");
+        console.log(`Proxy: Enviando para ${recipient}`);
+        this.real.send(recipient, message);
+    }
 }
 
 class EmailNotification extends BaseNotification {

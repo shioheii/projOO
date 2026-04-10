@@ -51,6 +51,19 @@ class SMSLegadoAdapter implements Notification {
     }
 }
 
+class NotificationProxy implements Notification {
+    constructor(
+        private real: Notification,
+        private allowedChannels: string[]
+    ) {}
+
+    send(recipient: string, message: string): void {
+        console.log("Validando permissoes");
+        console.log(`Proxy: Enviando para ${recipient}`);
+        this.real.send(recipient, message);
+    }
+}
+
 class EmailNotification extends BaseNotification {
     sendNotification() {
         const config = AppConfig.getInstance();

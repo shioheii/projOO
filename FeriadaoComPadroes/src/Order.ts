@@ -13,7 +13,7 @@ export class Order {
 
   updateStatus(status: 'pending' | 'processing' | 'completed'): void {
     this.status = status;
-    console.log(`📦 Pedido ${this.id} - Status: ${status}`);
+    console.log(`Pedido ${this.id} - Status: ${status}`);
   }
 
   toString(): string {

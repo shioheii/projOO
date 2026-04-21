@@ -10,12 +10,17 @@ import {
   FreeShipping,
   ShippingCalculator
 } from './src/strategy/OrderStrategy';
+import {
+  ModernPaymentSystem,
+  OldPaymentGateway,
+  PaymentAdapter
+} from './src/adapter/PaymentAdapter';
 
 console.log('=== SISTEMA DE PEDIDOS ===\n');
 
-// Testando Singleton
 const manager = OrderManager.getInstance();
 
+// Testando Factoru
 const standardFactory = new StandardOrderFactory();
 const premiumFactory = new PremiumOrderFactory();
 const bulkFactory = new BulkOrderFactory();
@@ -28,11 +33,11 @@ manager.addOrder(order1);
 manager.addOrder(order2);
 manager.addOrder(order3);
 
+// Testando diferentes estratégias para o mesmo pedido
 const expressStrategy = new ExpressShipping();
 const economicStrategy = new EconomicShipping();
 const freeStrategy = new FreeShipping();
 
-// Testando diferentes estratégias para o mesmo pedido
 console.log('\nTeste de estratégias para o pedido 001 (Notebook):');
 const calculator = new ShippingCalculator(expressStrategy);
 calculator.calculateShipping(order1);
@@ -55,5 +60,19 @@ manager.listOrders().forEach(order => {
   console.log(order.toString());
   console.log('-'.repeat(40));
 });
+
+// Testes no Adapter
+console.log('\nUsando sistema moderno de pagamento:');
+const modernPayment = new ModernPaymentSystem();
+modernPayment.processPayment(order1, 'Cartão de Crédito');
+
+console.log('\nUsando sistema legado via Adapter:');
+const legacyGateway = new OldPaymentGateway();
+const adapter = new PaymentAdapter(legacyGateway, 'CLIENTE_123');
+adapter.processPayment(order2, 'Boleto Bancário');
+
+console.log('\nComparando interfaces após adapter:');
+console.log('Sistema Moderno:', modernPayment.processPayment(order3, 'PIX'));
+console.log('Sistema Legado Adaptado:', adapter.processPayment(order3, 'Transferência'));
 
 console.log(`\nTotal de pedidos no sistema: ${manager.getTotalOrders()}`);

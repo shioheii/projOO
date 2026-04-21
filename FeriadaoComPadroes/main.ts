@@ -1,5 +1,5 @@
 import { Order } from './src/Order';
-import { OrderManager } from './src/OrderManager';
+import { OrderManager } from './src/singleton/OrderManager';
 import { 
   StandardOrderFactory,
   PremiumOrderFactory,

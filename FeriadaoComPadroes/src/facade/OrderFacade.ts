@@ -1,6 +1,6 @@
 // src/facade/OrderFacade.ts
 import { Order } from '../Order';
-import { OrderManager } from '../OrderManager';
+import { OrderManager } from '../singleton/OrderManager';
 import { StandardOrderFactory, PremiumOrderFactory, BulkOrderFactory } from '../factory/OrderFactory';
 import { ExpressShipping, EconomicShipping, FreeShipping, ShippingCalculator } from '../strategy/OrderStrategy';
 import { ModernPaymentSystem, PaymentAdapter, OldPaymentGateway } from '../adapter/PaymentAdapter';

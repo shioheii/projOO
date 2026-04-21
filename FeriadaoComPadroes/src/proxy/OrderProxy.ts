@@ -1,5 +1,5 @@
 import { Order } from '../Order';
-import { OrderManager } from '../OrderManager';
+import { OrderManager } from '../singleton/OrderManager';
 
 // Interface do serviço real
 export interface OrderService {

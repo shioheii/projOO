@@ -1,4 +1,4 @@
-import { Order } from './Order';
+import { Order } from '../Order';
 
 export class OrderManager {
   private static instance: OrderManager;

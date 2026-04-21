@@ -1,3 +1,4 @@
+import { Order } from './src/Order';
 import { OrderManager } from './src/OrderManager';
 import { 
   StandardOrderFactory,
@@ -15,12 +16,15 @@ import {
   OldPaymentGateway,
   PaymentAdapter
 } from './src/adapter/PaymentAdapter';
+import { OrderProxy } from './src/proxy/OrderProxy';
+import { InsuranceDecorator, PriorityDeliveryDecorator } from './src/decorator/OrderDecorator';
+import { OrderFacade } from './src/facade/OrderFacade';
 
 console.log('=== SISTEMA DE PEDIDOS ===\n');
 
+// Testando Factory e Singleton
 const manager = OrderManager.getInstance();
 
-// Testando Factoru
 const standardFactory = new StandardOrderFactory();
 const premiumFactory = new PremiumOrderFactory();
 const bulkFactory = new BulkOrderFactory();
@@ -33,25 +37,62 @@ manager.addOrder(order1);
 manager.addOrder(order2);
 manager.addOrder(order3);
 
-// Testando diferentes estratégias para o mesmo pedido
+// Testando Strategy
 const expressStrategy = new ExpressShipping();
 const economicStrategy = new EconomicShipping();
 const freeStrategy = new FreeShipping();
 
-console.log('\nTeste de estratégias para o pedido 001 (Notebook):');
+console.log('\nTeste de estratégias para o pedido 001:');
 const calculator = new ShippingCalculator(expressStrategy);
 calculator.calculateShipping(order1);
-
 calculator.setStrategy(economicStrategy);
 calculator.calculateShipping(order1);
-
 calculator.setStrategy(freeStrategy);
 calculator.calculateShipping(order1);
 
-// Mudando status para testar observer
-console.log('\nAlterando status do pedido 002:');
+// Testando Observer
+order2.updateStatus('processing');
 order2.updateStatus('completed');
 
+// Testando Adapter
+const modernPayment = new ModernPaymentSystem();
+modernPayment.processPayment(order1, 'Cartão');
+
+const legacyGateway = new OldPaymentGateway();
+const adapter = new PaymentAdapter(legacyGateway, 'CLIENTE_123');
+adapter.processPayment(order2, 'Boleto');
+
+// Testando Proxy
+const adminProxy = new OrderProxy('admin');
+const userProxy = new OrderProxy('user');
+const guestProxy = new OrderProxy('guest');
+
+console.log('\nAdmin tentando cancelar pedido:');
+adminProxy.cancelOrder('001');
+console.log('\nGuest tentando cancelar pedido:');
+guestProxy.cancelOrder('001');
+console.log('\nUser tentando alterar preço:');
+userProxy.updateOrderPrice('001', 3000);
+
+// Testando Decorator
+let decoratedOrder: Order = new InsuranceDecorator(order3);
+decoratedOrder = new PriorityDeliveryDecorator(decoratedOrder);
+
+console.log('\nPedido original:');
+console.log(order3.toString());
+console.log('\nPedido com decorators:');
+console.log(decoratedOrder.toString());
+console.log(`Total com extras: R$${decoratedOrder.getTotal().toFixed(2)}`);
+
+// Testando Facade
+const facade = new OrderFacade('admin');
+const complexOrder = facade.createCompleteOrder(
+  '999', 'Smartphone', 2, 1500, 'premium', 'express', true, true
+);
+facade.cancelOrderSecurely('999');
+facade.getSystemSummary();
+
+// Listagem final
 console.log('\n' + '='.repeat(60));
 console.log('LISTA COMPLETA DE PEDIDOS');
 console.log('='.repeat(60));
@@ -60,19 +101,5 @@ manager.listOrders().forEach(order => {
   console.log(order.toString());
   console.log('-'.repeat(40));
 });
-
-// Testes no Adapter
-console.log('\nUsando sistema moderno de pagamento:');
-const modernPayment = new ModernPaymentSystem();
-modernPayment.processPayment(order1, 'Cartão de Crédito');
-
-console.log('\nUsando sistema legado via Adapter:');
-const legacyGateway = new OldPaymentGateway();
-const adapter = new PaymentAdapter(legacyGateway, 'CLIENTE_123');
-adapter.processPayment(order2, 'Boleto Bancário');
-
-console.log('\nComparando interfaces após adapter:');
-console.log('Sistema Moderno:', modernPayment.processPayment(order3, 'PIX'));
-console.log('Sistema Legado Adaptado:', adapter.processPayment(order3, 'Transferência'));
 
 console.log(`\nTotal de pedidos no sistema: ${manager.getTotalOrders()}`);

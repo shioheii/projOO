@@ -1,5 +1,5 @@
 interface IObservador {
-  atualizar(sujeito: SujeitoAbstract): void;
+  atualizar(dados: DadosRio, nomeEstacao: string): void;
 }
 
 abstract class SujeitoAbstract {
@@ -13,9 +13,13 @@ abstract class SujeitoAbstract {
     this.observadores = this.observadores.filter((obs) => obs !== observador);
   }
 
-  protected notificarObservadores(): void {
+  // O Sujeito empurra os dados obtidos para cada Observador
+  // Com o método PUSH, o Observador não precisa chamar o Sujeito de volta para obter as informações
+  protected notificarObservadores(dados: DadosRio, nomeEstacao: string): void {
     this.observadores.forEach((observador) => {
-      observador.atualizar(this);
+      // O Sujeito chama o callback do Observador (inversão de controle)
+      // O Observador não controla quando isso acontece, ele só espera ser chamado (Princípio de Hollywood)
+      observador.atualizar(dados, nomeEstacao);
     });
   }
 }
@@ -46,78 +50,124 @@ class EstacaoMonitoramento extends SujeitoAbstract {
     return this.localizacao;
   }
 
-  obterDados(): DadosRio {
-    return { ...this.dados };
-  }
-
   atualizarMedicoes(novosDados: Partial<DadosRio>): void {
     this.dados = { ...this.dados, ...novosDados };
-    this.notificarObservadores();
+    this.notificarObservadores(this.dados, this.localizacao);
   }
 }
 
 class InstituicaoEnsino implements IObservador {
-  private estacoesMonitoradas: EstacaoMonitoramento[] = [];
+  private dados: Record<string, DadosRio> = {};
 
   constructor(public readonly nome: string) {}
 
   iniciarMonitoramento(estacao: EstacaoMonitoramento): void {
-    this.estacoesMonitoradas.push(estacao);
     estacao.adicionarObservador(this);
   }
 
   pararMonitoramento(estacao: EstacaoMonitoramento): void {
-    this.estacoesMonitoradas = this.estacoesMonitoradas.filter(
-      (e) => e !== estacao
-    );
     estacao.removerObservador(this);
   }
 
-  atualizar(sujeito: SujeitoAbstract): void {
-    const estacao = sujeito as EstacaoMonitoramento;
-    const dados = estacao.obterDados();
-    
-    console.log(`\n${this.nome} - Atualização da estação: ${estacao.obterLocalizacao()}`);
-    console.log(`Temperatura: ${dados.temperatura}°C`);
-    console.log(`Pressão atmosférica: ${dados.pressaoAtmosferica} hPa`);
-    console.log(`Oxigênio dissolvido: ${dados.ph} mg/L`);
-    console.log(`Velocidade da corrente: ${dados.humidade} m/s`);
+  // Implementação do callback do observador, com condição de leitura pela temperatura
+  // É chamado pelo Sujeito (inversão de controle), a InstituicaoEnsino nunca chama isso diretamente
+  atualizar(novosDados: DadosRio, nomeEstacao: string): void {
+    const dadosAtuais = this.dados[nomeEstacao];
+    if (
+      !dadosAtuais ||
+      Math.abs(dadosAtuais.temperatura - novosDados.temperatura) >= 1
+    ) {
+      this.dados[nomeEstacao] = novosDados;
+      this.exibirDados(nomeEstacao);
+    }
+  }
+
+  exibirDados(nomeEstacao: string): void {
+    const dados = this.dados[nomeEstacao];
+    console.log(`\n${this.nome} - Atualização da estação: ${nomeEstacao}`);
+    console.log(`Temperatura: ${dados?.temperatura}°C`);
+    console.log(`Pressão atmosférica: ${dados?.pressaoAtmosferica} hPa`);
+    console.log(`Oxigênio dissolvido: ${dados?.ph} mg/L`);
+    console.log(`Velocidade da corrente: ${dados?.humidade} m/s`);
   }
 }
 
-const estacaoTiete = new EstacaoMonitoramento("Rio Tietê");
-const estacaoPinheiros = new EstacaoMonitoramento("Rio Pinheiros");
+class Laboratorio implements IObservador {
+  private dados: Record<string, DadosRio> = {};
 
-const institutoUSP = new InstituicaoEnsino("USP");
-const centroUNIFESP = new InstituicaoEnsino("UNIFESP");
-const campusUNESP = new InstituicaoEnsino("UNESP");
+  constructor(public readonly nome: string) {}
+
+  iniciarMonitoramento(estacao: EstacaoMonitoramento): void {
+    estacao.adicionarObservador(this);
+  }
+
+  pararMonitoramento(estacao: EstacaoMonitoramento): void {
+    estacao.removerObservador(this);
+  }
+
+  // Implementação do callback do observador
+  // É chamado pelo Sujeito (inversão de controle), o Laboratorio nunca chama isso diretamente
+  atualizar(novosDados: DadosRio, nomeEstacao: string): void {
+    this.dados[nomeEstacao] = novosDados;
+    this.exibirDados(nomeEstacao);
+  }
+
+  exibirDados(nomeEstacao: string): void {
+    const dados = this.dados[nomeEstacao];
+    console.log(`\n${this.nome} - Atualização da estação: ${nomeEstacao}`);
+    console.log(`Temperatura: ${dados?.temperatura}°C`);
+    console.log(`Pressão atmosférica: ${dados?.pressaoAtmosferica} hPa`);
+    console.log(`Oxigênio dissolvido: ${dados?.ph} mg/L`);
+    console.log(`Velocidade da corrente: ${dados?.humidade} m/s`);
+  }
+}
+
+// Test
+const estacaoTiete    = new EstacaoMonitoramento("Rio Tietê");
+const estacaoPinheiros = new EstacaoMonitoramento("Rio Pinheiros");
+const estacaoTamandua = new EstacaoMonitoramento("Rio Tamanduateí");
+
+const institutoUSP    = new InstituicaoEnsino("USP");
+const centroUNIFESP   = new InstituicaoEnsino("UNIFESP");
+const labHidro        = new Laboratorio("Lab Hidrologia");
 
 institutoUSP.iniciarMonitoramento(estacaoTiete);
 institutoUSP.iniciarMonitoramento(estacaoPinheiros);
-centroUNIFESP.iniciarMonitoramento(estacaoTiete);
-campusUNESP.iniciarMonitoramento(estacaoPinheiros);
 
-console.log("ATUALIZAÇÃO 1: Rio Tietê");
+centroUNIFESP.iniciarMonitoramento(estacaoTamandua);
+
+labHidro.iniciarMonitoramento(estacaoTiete);
+labHidro.iniciarMonitoramento(estacaoPinheiros);
+labHidro.iniciarMonitoramento(estacaoTamandua);
+
+console.log("Leituras iniciais");
 estacaoTiete.atualizarMedicoes({
   temperatura: 22.3,
   pressaoAtmosferica: 1015,
   ph: 5.8,
   humidade: 1.2,
 });
-
-console.log("\nATUALIZAÇÃO 2: Rio Pinheiros");
 estacaoPinheiros.atualizarMedicoes({
   temperatura: 24.7,
   pressaoAtmosferica: 1013,
   ph: 6.2,
   humidade: 0.9,
 });
-
-console.log("\nUSP para de monitorar o Rio Tietê");
-institutoUSP.pararMonitoramento(estacaoTiete);
-
-console.log("\nATUALIZAÇÃO 3: Rio Tietê (apenas UNIFESP monitora)");
-estacaoTiete.atualizarMedicoes({ 
-  temperatura: 23.5, 
-  ph: 5.5 
+estacaoTamandua.atualizarMedicoes({
+  temperatura: 23.0,
+  pressaoAtmosferica: 1010,
+  ph: 6.0,
+  humidade: 0.7,
 });
+
+console.log("\nVariação pequena no Tietê (< 1), InstituicaoEnsino ignora, Lab registra");
+estacaoTiete.atualizarMedicoes({ temperatura: 22.6 });
+
+console.log("\nVariação significativa no Tietê (>= 1), todos notificados");
+estacaoTiete.atualizarMedicoes({ temperatura: 25.0, ph: 5.5 });
+
+console.log("\nUSP para de monitorar o Rio Pinheiros");
+institutoUSP.pararMonitoramento(estacaoPinheiros);
+
+console.log("\nAtualização no Pinheiros, só Lab recebe");
+estacaoPinheiros.atualizarMedicoes({ temperatura: 27.0, ph: 6.0 });

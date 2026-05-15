@@ -4,10 +4,10 @@ interface Mensagem {
   bloqueada?: boolean;
 }
 
-abstract class MensagemTerminator {
-  private proximo: MensagemTerminator | null = null;
+abstract class MensagemMediator {
+  private proximo: MensagemMediator | null = null;
 
-  setProximo(handler: MensagemTerminator): MensagemTerminator {
+  setProximo(handler: MensagemMediator): MensagemMediator {
     this.proximo = handler;
     return handler;
   }
@@ -21,7 +21,7 @@ abstract class MensagemTerminator {
   abstract processar(mensagem: Mensagem): void;
 }
 
-class FiltroSpamHandler extends MensagemTerminator {
+class FiltroSpamHandler extends MensagemMediator {
   private readonly palavrasProibidas = ["spam", "promoção", "clique aqui"];
 
   processar(mensagem: Mensagem): void {
@@ -40,7 +40,7 @@ class FiltroSpamHandler extends MensagemTerminator {
   }
 }
 
-class FiltroPalavraoHandler extends MensagemTerminator {
+class FiltroPalavraoHandler extends MensagemMediator {
   private readonly palavroes = ["xingamento1", "xingamento2"];
 
   processar(mensagem: Mensagem): void {
@@ -55,28 +55,28 @@ class FiltroPalavraoHandler extends MensagemTerminator {
   }
 }
 
-class Terminator extends MensagemTerminator {
+class Mediator extends MensagemMediator {
   processar(mensagem: Mensagem): void {
     if (mensagem.bloqueada) {
-      console.log(`[Terminator] Mensagem bloqueada. Encerando cadeia.`);
+      console.log(`[Mediator] Mensagem bloqueada. Encerando cadeia.`);
       return;
     }
-    console.log(`[Terminator] Mensagem entregue ao chat:`);
+    console.log(`[Mediator] Mensagem entregue ao chat:`);
     console.log(`             ${mensagem.autor}: "${mensagem.conteudo}"`);
   }
 }
 
 class Chat {
-  private cadeia: MensagemTerminator;
+  private cadeia: MensagemMediator;
 
   constructor() {
     const filtroSpam    = new FiltroSpamHandler();
     const filtroPalavrão = new FiltroPalavraoHandler();
-    const terminator    = new Terminator();
+    const mediator    = new Mediator();
 
     filtroSpam
       .setProximo(filtroPalavrão)
-      .setProximo(terminator);
+      .setProximo(mediator);
 
     this.cadeia = filtroSpam;
   }
